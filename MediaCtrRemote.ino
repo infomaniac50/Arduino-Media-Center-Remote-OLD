@@ -18,61 +18,89 @@ IPAddress ip(192, 168, 2, 88);
 EthernetUDP Udp;
 IRsend ir_send;
 
-struct IrCode {
-  unsigned long long value;
+struct IrPacket {
+  int type;
+  IrCode code;
 };
 
-union IrPacket {
-  IrCode code;
-  char udp[sizeof(IrCode)];
-} packet;
-
-
+IrPacket packet;
+char * rawUdp;
 void setup()
 {
+  rawUdp = (char*)(&packet);
+
   pinMode(SS, OUTPUT);
 
-#ifdef NODHCP  
+  #ifdef NODHCP  
   Ethernet.begin(mac, ip);
-#else
+  #else
   if (Ethernet.begin(mac) == 0)
   {
     while(true);
   }
-#endif
+  #endif
 
-#ifdef DEBUG_SERIAL
+  #ifdef DEBUG_SERIAL
   Serial.begin(9600);
 
   while (Serial.available() <= 0 && Serial.read() != 'g' && Serial.read() != 'o')
     delay(100);
 
   Serial.println("Go Code Received");
-#endif
+  #endif
 
   Udp.begin(PORT);
 }
 
 void loop()
 {
-  int packet_size = Udp.parsePacket();
+  size_t packet_size = Udp.parsePacket();
   if (packet_size) {
 
-  #ifdef DEBUG_SERIAL
+    #ifdef DEBUG_SERIAL
     Serial.print(F("Got packet of size: "));
     Serial.print(packet_size);
     Serial.println(F(" bytes"));
-  #endif
+    #endif
 
     if (packet_size == sizeof(IrPacket))
     {
-      Udp.read(packet.udp, packet_size);
+      Udp.read(rawUdp, sizeof(IrPacket));
 
-      ir_send.sendNEC((unsigned long)packet.code.value, 32);
-  #ifdef DEBUG_SERIAL
-      printBigInt(&Serial, packet.code.value);
-      delay(10);
-  #endif
+      switch (packet.type) {
+          case NEC:
+            ir_send.sendNEC(packet.code);
+            break;
+          case SONY:
+            ir_send.sendSony(packet.code);
+            break;
+          case RC5:
+            ir_send.sendRC5(packet.code);
+            break;
+          case RC6:
+            ir_send.sendRC6(packet.code);
+            break;
+          case DISH:
+            ir_send.sendDISH(packet.code);
+            break;
+          case SHARP:
+            ir_send.sendSharp(packet.code);
+            break;
+          case PANASONIC:
+            ir_send.sendPanasonic(packet.code);
+            break;
+          case JVC:
+            ir_send.sendJVC(packet.code);
+            break;
+          default: 
+            break;
+      }
+
+      #ifdef DEBUG_SERIAL
+      Serial.println(packet.type);
+      printBigInt(&Serial, packet.value);
+      #endif
+    
     }
   }
 
