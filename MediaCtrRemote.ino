@@ -16,14 +16,20 @@ IPAddress ip(192, 168, 2, 88);
 #endif
 
 EthernetUDP Udp;
+#ifndef DEBUG_SERIAL
 IRsend ir_send;
+#endif
 
-struct IrPacket {
-  int type;
-  IrCode code;
-};
+// struct IrCode
+// {
+//   int type;
+//   int nbits;
+//   unsigned long ex1;
+//   unsigned long ex2;
+//   unsigned long long value;
+// };
 
-IrPacket packet;
+IrCode packet;
 char * rawUdp;
 void setup()
 {
@@ -55,6 +61,7 @@ void setup()
 void loop()
 {
   size_t packet_size = Udp.parsePacket();
+
   if (packet_size) {
 
     #ifdef DEBUG_SERIAL
@@ -63,41 +70,72 @@ void loop()
     Serial.println(F(" bytes"));
     #endif
 
-    if (packet_size == sizeof(IrPacket))
+    if (packet_size == sizeof(IrCode))
     {
-      Udp.read(rawUdp, sizeof(IrPacket));
+      Udp.read(rawUdp, sizeof(IrCode));
 
       switch (packet.type) {
           case NEC:
-            ir_send.sendNEC(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("NEC"));
+          #else
+            ir_send.sendNEC(packet);
+          #endif
             break;
           case SONY:
-            ir_send.sendSony(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("SONY"));
+          #else
+            ir_send.sendSony(packet);
+          #endif
             break;
           case RC5:
-            ir_send.sendRC5(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("RC5"));
+          #else
+            ir_send.sendRC5(packet);
+          #endif
             break;
           case RC6:
-            ir_send.sendRC6(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("RC6"));
+          #else
+            ir_send.sendRC6(packet);
+          #endif
             break;
           case DISH:
-            ir_send.sendDISH(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("DISH"));
+          #else
+            ir_send.sendDISH(packet);
+          #endif
             break;
           case SHARP:
-            ir_send.sendSharp(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("SHARP"));
+          #else
+            ir_send.sendSharp(packet);
+          #endif
             break;
           case PANASONIC:
-            ir_send.sendPanasonic(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("PANASONIC"));
+          #else
+            ir_send.sendPanasonic(packet);
+          #endif
             break;
           case JVC:
-            ir_send.sendJVC(packet.code);
+          #ifdef DEBUG_SERIAL
+            Serial.println(F("JVC"));
+          #else
+            ir_send.sendJVC(packet);
+          #endif
             break;
           default: 
             break;
       }
 
       #ifdef DEBUG_SERIAL
-      Serial.println(packet.type);
       printBigInt(&Serial, packet.value);
       #endif
     
